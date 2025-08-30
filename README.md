@@ -86,7 +86,7 @@ mosquitto -v
 
 ### 2. Clone the Project
 ```bash
-git clone https://github.com/yourusername/FogSense.git
+git clone https://github.com/riyad1721/FogSense-Real-Time-IoT-Fog-Monitoring-System.git
 cd FogSense
 ```
 
@@ -139,12 +139,3 @@ python iot_device.py
 
 ---
 
-## 👨‍💻 Author
-Developed by **[Your Name]**  
-Institute: **[Your Institute / University]**  
-Year: **2025**  
-
----
-
-## 📜 License
-This project is licensed under the MIT License.
