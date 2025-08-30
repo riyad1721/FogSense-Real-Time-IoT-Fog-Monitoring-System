@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FogSense Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f8f9fa; }
+        .card { margin-top: 20px; border-radius: 12px; }
+        .header { background: #4a148c; color: white; padding: 15px; border-radius: 12px; margin-top: 10px; }
+        .anomaly { font-size: 1.2rem; font-weight: bold; color: #c62828; }
+        .normal { font-size: 1.2rem; font-weight: bold; color: #2e7d32; }
+        footer { margin-top: 20px; text-align: center; font-size: 0.9rem; color: gray; }
+    </style>
+</head>
+<body class="container">
+    
+    <!-- Project Header -->
+    <div class="header text-center">
+        <h1>🌐 FogSense: Real-Time IoT Fog Monitoring System</h1>
+        <p>Smart Fog Computing project with IoT Simulation, Anomaly Detection, and Cloud Dashboard</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row text-center">
+        <div class="col-md-3"><div class="card p-3"><h5>🌡 Avg Temp</h5><p id="avg-temp">--</p></div></div>
+        <div class="col-md-3"><div class="card p-3"><h5>💧 Avg Humidity</h5><p id="avg-hum">--</p></div></div>
+        <div class="col-md-3"><div class="card p-3"><h5>⚠ Total Anomalies</h5><p id="total-anom">0</p></div></div>
+        <div class="col-md-3"><div class="card p-3"><h5>📈 Data Count</h5><p id="data-count">0</p></div></div>
+    </div>
+
+    <!-- Graphs -->
+    <div class="card p-3">
+        <h4>📊 Temperature & Humidity</h4>
+        <canvas id="chart1" height="120"></canvas>
+    </div>
+    <div class="card p-3">
+        <h4>🌫 Air Quality Index (AQI)</h4>
+        <canvas id="chart2" height="120"></canvas>
+    </div>
+
+    <!-- Anomaly & Log -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card p-3">
+                <h4>⚠ Anomaly Detection</h4>
+                <p id="anomaly-status" class="normal">✔ Normal</p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-3">
+                <h4>📋 Recent Anomalies</h4>
+                <table class="table table-sm">
+                    <thead><tr><th>Time</th><th>Temp</th><th>Hum</th><th>AQI</th></tr></thead>
+                    <tbody id="anom-table"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purpose -->
+    <div class="card p-3">
+        <h4>🎯 Project Purpose</h4>
+        <p>
+            This system demonstrates <b>Fog Computing</b> with IoT devices.  
+            Sensor data is processed at the <b>Fog Node</b> to detect anomalies in real-time.  
+            Only filtered insights are sent to the <b>Cloud Dashboard</b> for monitoring and storage.  
+            Benefits: reduced latency, efficient bandwidth usage, and intelligent edge computing.
+        </p>
+        <p><i>[ Architecture Diagram Placeholder: IoT Device → Fog Node → Cloud Dashboard ]</i></p>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        Developed by [Your Name] | [Your Institute] | © 2025
+    </footer>
+
+    <script>
+        let chart1, chart2;
+
+        async function fetchData() {
+            let res = await fetch("/data");
+            return (await res.json()).reverse();
+        }
+
+        async function fetchStats() {
+            let res = await fetch("/stats");
+            return await res.json();
+        }
+
+        async function fetchAnomalies() {
+            let res = await fetch("/anomalies");
+            return await res.json();
+        }
+
+        async function updateDashboard() {
+            let data = await fetchData();
+            let stats = await fetchStats();
+            let anomalies = await fetchAnomalies();
+
+            // Update stats
+            document.getElementById("avg-temp").innerText = stats.avg_temp + " °C";
+            document.getElementById("avg-hum").innerText = stats.avg_hum + " %";
+            document.getElementById("total-anom").innerText = stats.anomalies;
+            document.getElementById("data-count").innerText = stats.count;
+
+            // Graphs
+            let temps = data.map(d => d[1]);
+            let hums = data.map(d => d[2]);
+            let aqis = data.map(d => d[3]);
+            let labels = data.map(d => d[0]);
+
+            if (!chart1) {
+                chart1 = new Chart(document.getElementById("chart1"), {
+                    type: 'line',
+                    data: { labels: labels, datasets: [
+                        { label: 'Temperature (°C)', data: temps, borderColor: 'red', fill: false },
+                        { label: 'Humidity (%)', data: hums, borderColor: 'blue', fill: false }
+                    ]},
+                    options: { responsive: true, animation: false }
+                });
+                chart2 = new Chart(document.getElementById("chart2"), {
+                    type: 'line',
+                    data: { labels: labels, datasets: [
+                        { label: 'AQI', data: aqis, borderColor: 'green', fill: false }
+                    ]},
+                    options: { responsive: true, animation: false }
+                });
+            } else {
+                chart1.data.labels = labels;
+                chart1.data.datasets[0].data = temps;
+                chart1.data.datasets[1].data = hums;
+                chart1.update();
+
+                chart2.data.labels = labels;
+                chart2.data.datasets[0].data = aqis;
+                chart2.update();
+            }
+
+            // Anomaly status
+            let latest = data[data.length - 1];
+            if (latest && latest[4] === 1) {
+                document.getElementById("anomaly-status").innerText = "⚠ Anomaly detected!";
+                document.getElementById("anomaly-status").className = "anomaly";
+            } else {
+                document.getElementById("anomaly-status").innerText = "✔ Normal";
+                document.getElementById("anomaly-status").className = "normal";
+            }
+
+            // Anomaly log table
+            let tbody = document.getElementById("anom-table");
+            tbody.innerHTML = "";
+            anomalies.forEach(a => {
+                let row = `<tr><td>${a[0]}</td><td>${a[1]}</td><td>${a[2]}</td><td>${a[3]}</td></tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        setInterval(updateDashboard, 2000);
+        updateDashboard();
+    </script>
+</body>
+</html>
